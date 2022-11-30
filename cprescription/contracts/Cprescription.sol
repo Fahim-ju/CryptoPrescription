@@ -117,8 +117,8 @@ contract Cprescription is Ownable{
         // Checkpoints Before execution
         require((doctorList[msg.sender]) || (patientList[_pid].patientID == msg.sender));
         
-        p = prescriptionList[_pid];   //return prescription object ***********
-        return p;
+        return p = prescriptionList[_pid];   //return prescription object ***********
+        
       //  require(patientList[_pid].insuranceAmount >= _amountRequired);
         
         // If all Conditions are satisfied, Funds are transferred to the assigned doctor

@@ -1,11 +1,11 @@
 from brownie import accounts, config, Cprescription,network
-from accountManager import get_account
+from scripts.accountManager import get_account
 
 #import yaml
 #with open('brownie-config.yaml', 'rt', encoding='utf8') as yml:
 #    config = yaml.load(yml)
 
-def deploy_simple_storage():
+def deploy_Cprescription_Contract():
     #account = accounts[0]
     account = get_account()
     cprescription = Cprescription.deploy({"from": account})
@@ -19,8 +19,6 @@ def deploy_simple_storage():
 
 
 
-
-def main():
-    contract_address = deploy_simple_storage()
-    contract_address.setPatientData("Jalil","Rahim",25)
-    print(contract_address.patientList(contract_address.pidList(0)))
+   # contract_address = deploy_Cprescription_Contract()
+    #contract_address.setPatientData("Jalil","Rahim",25)
+    #print(contract_address.patientList(contract_address.pidList(0)))
