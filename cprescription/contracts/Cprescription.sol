@@ -8,16 +8,17 @@ contract Cprescription is Ownable{
     //uint public withdrawCount;
     uint public doctorCount=0;
     ///*** setting up strucks
+    uint public patientQueueCountFront=0;
+    uint public patientQueueCountBack=0;
+
+    address adminAddress;
 
     struct Patient {
         uint256 time;
-        //could be medicine
-        // uint256 donatedAmount; string array
         string name;
         uint age;
         string disease;
         string doctorName;
-        //string ipfsHash;
         address doctorAddress;
         address patientID;
         bool pidAvailable;
@@ -25,7 +26,7 @@ contract Cprescription is Ownable{
         string medicine;   //used in writeMedicine
     }
 
-    struct Doctor {
+    struct Doctor{
         address docAdress;
         string docName;
         string docSpecialization;
@@ -36,17 +37,15 @@ contract Cprescription is Ownable{
         address pid;
         string doctorName;
         uint256 time;
-        //new  
         string medicine;   //used in writeMedicine
-        //uint256 amount;
         string patientName;
     }
-    //prescription
 
+    //prescription
     struct prescription{
         address pid;
         string patientName;
-        string doctorName;
+        address doctorAddress;
         uint256 time;
         uint256 age;
         string medicine;
@@ -60,14 +59,24 @@ contract Cprescription is Ownable{
     mapping(uint256 => address) public docAddressList;
     //p_id to checkup mapping
     mapping(address  => prescription) public prescriptionList;
-    //mapping(address => string[]) public checkuplist;
-  //  mapping(uint256 => withdrawHistory) public withdrawHistoryList;
+    //patientqueuelist who asks for doctor
+    mapping(uint256 => address) patientQueueIdList;
+    mapping(address => Patient) public patientQueueList; ///diseases are sympstom in this case
+
+
+    function askForDoctor(string memory _name, uint256 _age, string memory sympstom) public {
+        patientQueueIdList[patientQueueCountBack] = msg.sender;
+        patientQueueList[msg.sender] = Patient(block.timestamp,_name,_age,sympstom,' ',0x0000000000000000000000000000000000000000,msg.sender,true,false," ");
+        patientQueueCountBack++;
+    }
+
 
     //Function to add a New Patient
  
-    function setPatientData(string memory _name, string memory _disease,uint _age) public {
-        //GENERATING a UNIQUE ID for Patient
-        address pid = address(bytes20(keccak256(abi.encodePacked(msg.sender,block.timestamp))));
+    function setPatientData(string memory _name, string memory _disease,uint _age) public onlyOwner{
+        require(patientQueueCountFront <= patientQueueCountBack, "All Patient Already Set");
+        address pid = patientQueueIdList[patientQueueCountFront];
+        patientQueueCountFront++;
         patientList[pid] = Patient(block.timestamp,_name,_age,_disease,' ',0x0000000000000000000000000000000000000000,pid,true,false," ");     
         //Increasing Patient Count by 1
         pidList[pidCount] = pid;
@@ -77,7 +86,7 @@ contract Cprescription is Ownable{
 
     // Add a New DOCTOR
     function setDoctor(address _docAddress,string memory _name, string memory _spec) public onlyOwner{
-        require(!doctorList[_docAddress]);
+        require(!doctorList[_docAddress],"You are not authorised to create doctor profile");
         doctorList[_docAddress] = true;
         doctorDetailList[_docAddress].docAdress = _docAddress;
         doctorDetailList[_docAddress].docName = _name;
@@ -86,14 +95,15 @@ contract Cprescription is Ownable{
         doctorCount++;
     }
     
+
 //This function can only be called by a Doctor in the network
 //doctor signtanure when observe patient
-///**medicine should be added
-    function doctorSign(address _pid) public{
-        require(doctorList[msg.sender]);
+///**medicine should be added                                                       ///admin use this function to assign doctor to patient
+    function doctorSign(address _pid,address doctorAddress) public onlyOwner{
+        require(doctorList[doctorAddress],"You have to be a Admin to use this function");
         patientList[_pid].doctorSignature = true;
-        patientList[_pid].doctorAddress = msg.sender;
-        patientList[_pid].doctorName = doctorDetailList[msg.sender].docName;
+        patientList[_pid].doctorAddress = doctorAddress;
+        patientList[_pid].doctorName = doctorDetailList[doctorAddress].docName;
     }
 
 
@@ -101,12 +111,12 @@ contract Cprescription is Ownable{
     //Writing prescription : doctor
     //first check signed or not
     function writeMedicine(address _pid,string memory _medicine) public {  //payable
-        require(doctorList[msg.sender] == true) ;//caller doctor or not
-        require(patientList[_pid].doctorAddress == msg.sender);    //first check signed or not
+        require(doctorList[msg.sender] == true,"You have to be a Doctor to use this function") ;//caller doctor or not
+        require(patientList[_pid].doctorAddress == msg.sender, "You are not assigned to the patient");    //first check signed or not
          patientList[_pid].medicine = _medicine;
         //donorList[msg.sender] = msg.value;
        // CheckupHistory[_pid] = _medicine
-        prescriptionList[_pid] = prescription(_pid, patientList[_pid].name,doctorDetailList[msg.sender].docName ,block.timestamp,patientList[_pid].age,_medicine);
+        prescriptionList[_pid] = prescription(_pid, patientList[_pid].name,msg.sender ,block.timestamp,patientList[_pid].age,_medicine);
     }
 
 
@@ -115,7 +125,7 @@ contract Cprescription is Ownable{
 //Withdrawing Funds from Patient // withdrawing medicine details from patient
     function getPrescription(address _pid) public view returns(prescription memory p){
         // Checkpoints Before execution
-        require((doctorList[msg.sender]) || (patientList[_pid].patientID == msg.sender));
+        require((doctorList[msg.sender]) || (patientList[_pid].patientID == msg.sender), "Your are not Authorised to view this prescription");
         
         return p = prescriptionList[_pid];   //return prescription object ***********
         

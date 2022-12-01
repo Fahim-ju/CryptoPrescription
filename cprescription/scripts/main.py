@@ -15,9 +15,10 @@ def main():
     setPatientData(contract_address,"Mohidul","Fever",28)
     patient_address = contract_address.pidList(0)
     print(contract_address.patientList((contract_address.pidList(0))))
-    doctorSign(contract_address,patient_address)
+    doctorSign(contract_address,patient_address,account)
     writeMedicine(contract_address,patient_address,"Napa")
     print(contract_address.patientList((contract_address.pidList(0))))
     print(contract_address.prescriptionList(patient_address))
+    
     print(type(getPrescription(contract_address,patient_address)))  #should provide prescription object
 
